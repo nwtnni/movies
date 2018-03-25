@@ -1,45 +1,49 @@
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+
 extern crate regex;
 extern crate reqwest;
-extern crate select;
 
-use regex::Regex;
-use select::document::Document;
-use select::predicate::*;
+use std::{thread, time, env};
 
-const ROOT: &'static str = "https://en.wikipedia.org";
-const SOURCE: &'static str = "https://en.wikipedia.org/wiki/Lists_of_films";
+#[derive(Deserialize)]
+pub struct Movie {
+    id: i32,
+    vote_count: i32,
+    vote_average: f32,
+    title: String,
+    popularity: f32,
+    overview: String,
+    release_date: String,
+}
 
-pub fn main() {
-    
-    let response = reqwest::get(SOURCE)
-        .expect(&format!("Unable to read URL: {}", SOURCE));
+#[derive(Deserialize)]
+pub struct Response {
+    total_pages: i32,
+    results: Vec<Movie>,
+}
 
-    let doc = Document::from_read(response)
-        .expect(&format!("Unable to parse HTML from URL: {}", SOURCE));
+pub fn scrape(page: i32) -> Response {
 
-    let year_link_format = Regex::new(r"^/wiki/\d{4}_in_film$")
-        .unwrap();
-
-    let year_links = doc.find(Name("a"))
-        .filter_map(|link| link.attr("href"))
-        .filter(|link| year_link_format.is_match(link))
-        .map(|link| ROOT.to_owned() + link)
-        .collect::<Vec<_>>();
-
-    let test = extract_year(&year_links[15]);
+    let url = format!("https://api.themoviedb.org/3/movie/popular?api_key={}&language=en-US&page={}", env::var("TMDB_API_KEY").unwrap(), page);
+    let data = reqwest::get(&url).unwrap().text().unwrap();
+    serde_json::from_str(&data).unwrap()
 
 }
 
-pub fn extract_year(url: &str) {
-
-    let response = reqwest::get(url)
-        .expect(&format!("Unable to read URL: {}", url));
-
-    let doc = Document::from_read(response)
-        .expect(&format!("Unable to parse HTML from URL: {}", url));
-
-    let _ = doc.find(Name("a"))
-        .filter(|link| link.attr("title").is_some())
-        .for_each(|link| println!("{}", link.text()));
+pub fn main() {
     
+    let delay = time::Duration::from_millis(250);
+    let first = scrape(1);
+    let total = first.total_pages;
+    println!("{}", total);
+
+    for page in 1..total {
+        thread::sleep(delay);
+        for movie in scrape(page).results {
+            println!("{}: {}, {}", movie.id, movie.title, movie.vote_average);
+        }
+    }
 }
