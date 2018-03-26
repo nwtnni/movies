@@ -12,15 +12,15 @@ lazy_static! {
         .expect("Could not find environment variable TMDB_API_KEY.");
 }
 
-pub fn from_tmdb(id: i32) -> Result<(tmdb::Movie, tmdb::Keywords), Error> {
+pub fn from_tmdb(id: i32) -> Result<(tmdb::Movie, Vec<String>), Error> {
     Ok((tmdb::get_movie(&*KEY, id)?, tmdb::get_keywords(&*KEY, id)?))
 }
 
 pub fn main() {
-    for page in 1..100 {
-        if let Ok(p) = tmdb::get_page(&*KEY, page) {
-            for movie in p.results {
-                if let Ok((m, _)) = from_tmdb(movie.id) {
+    for n in 1..100 {
+        if let Ok(page) = tmdb::get_page(&*KEY, n) {
+            for id in page {
+                if let Ok((m, _)) = from_tmdb(id) {
                     println!("{}", m.title)        
                 }
             }
