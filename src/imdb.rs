@@ -18,7 +18,7 @@ enum IMDBError {
     MissingLink
 }
 
-pub fn test(id: &str) -> Result<String, Error> {
+pub fn get_poster(id: &str) -> Result<String, Error> {
 
     let url = home_url!(id);
     let home = reqwest::get(&url)?;

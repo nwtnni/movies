@@ -1,26 +1,16 @@
 use reqwest::get;
 use serde_json::from_str;
 use failure::Error;
-use std::{thread, time};
+use std::{thread, time, env};
 
-#[derive(Deserialize)]
-struct MovieID {
-    pub id: i32
-}
-
-#[derive(Deserialize)]
-pub struct Genre {
-    pub name: String,
-}
-
-#[derive(Deserialize)]
+#[derive(Serialize)]
 pub struct Movie {
     pub id: i32,
     pub imdb_id: String,
     pub title: String,
-    pub genres: Vec<Genre>,
+    pub genres: Vec<String>,
+    pub keywords: Vec<String>,
     pub homepage: Option<String>, 
-    pub original_language: Option<String>,
     pub popularity: Option<f32>,
     pub release_date: Option<String>,
     pub revenue: Option<f32>,
@@ -29,7 +19,33 @@ pub struct Movie {
     pub vote_average: Option<f32>,
 }
 
-impl Movie {
+#[derive(Deserialize)]
+struct MovieID {
+    pub id: i32
+}
+
+#[derive(Deserialize)]
+struct Genre {
+    pub name: String,
+}
+
+#[derive(Deserialize)]
+struct RawMovie {
+    id: i32,
+    imdb_id: String,
+    title: String,
+    genres: Vec<Genre>,
+    homepage: Option<String>, 
+    original_language: Option<String>,
+    popularity: Option<f32>,
+    release_date: Option<String>,
+    revenue: Option<f32>,
+    runtime: Option<i32>, 
+    tagline: Option<String>,
+    vote_average: Option<f32>,
+}
+
+impl RawMovie {
     pub fn is_english(&self) -> bool {
         Some("en".to_owned()) == self.original_language
     }
@@ -51,56 +67,108 @@ struct Page {
     pub results: Vec<MovieID>,
 }
 
+#[derive(Debug, Fail)]
+enum TMDBError {
+    #[fail(display = "Non-English movie")]
+    NonEnglish
+}
+
 lazy_static! {
     static ref DELAY: time::Duration = time::Duration::from_millis(250);
 }
 
-pub fn get_page(key: &str, page: i32) -> Result<Vec<i32>, Error> {
-    thread::sleep(*DELAY);
-
-    let url = format!(
-        "https://api.themoviedb.org/3/movie/popular?api_key={}&language=en-US&page={}",
-        key,
-        page
-    );
-
-    let page: Page = from_str(&get(&url)?.text()?)?;
-
-    Ok(
-        page.results
-            .into_iter()
-            .map(|movie| movie.id)
-            .collect()
-    )
+pub struct TMDB {
+    last_query: time::Instant,
+    key: String,
 }
 
-pub fn get_movie(key: &str, id: i32) -> Result<Movie, Error> {
-    thread::sleep(*DELAY); 
-
-    let url = format!(
-        "https://api.themoviedb.org/3/movie/{}?api_key={}&language=en-US",
-        id,
-        key
-    );
-
-    Ok(from_str(&get(&url)?.text()?)?)
+impl Default for TMDB {
+    fn default() -> Self {
+        TMDB {
+            last_query: time::Instant::now(),
+            key: env::var("TMDB_API_KEY")
+                .expect("Missing environment variable TMDB_API_KEY"),
+        }
+    }
 }
 
-pub fn get_keywords(key: &str, id: i32) -> Result<Vec<String>, Error> {
-    thread::sleep(*DELAY); 
+impl TMDB {
+    fn query(&mut self, url: &str) -> Result<String, Error> {
+        let delta = time::Instant::now() - self.last_query;
+        if *DELAY > delta { thread::sleep(delta); }
+        let data = get(url)?.text()?;
+        self.last_query = time::Instant::now();
+        Ok(data)
+    }
 
-    let url = format!(
-        "https://api.themoviedb.org/3/movie/{}/keywords?api_key={}&language=en-US",
-        id,
-        key
-    );
+    pub fn get_page(&mut self, page: i32) -> Result<Vec<i32>, Error> {
+        let url = format!(
+            "https://api.themoviedb.org/3/movie/popular?api_key={}&language=en-US&page={}",
+            &self.key,
+            page
+        );
 
-    let keywords: Keywords = from_str(&get(&url)?.text()?)?;
+        let data = self.query(&url)?;
+
+        Ok(
+            from_str::<Page>(&data)?
+                .results
+                .into_iter()
+                .map(|movie| movie.id)
+                .collect()
+        )
+    }
     
-    Ok(
-        keywords.keywords
-            .into_iter()
-            .map(|word| word.name)
-            .collect()
-    )
+    pub fn get_movie(&mut self, id: i32) -> Result<Movie, Error> {
+
+        let m = self.get_raw_movie(id)?;
+        if !m.is_english() { Err(TMDBError::NonEnglish)? }
+
+        Ok(
+            Movie {
+                id: m.id,
+                imdb_id: m.imdb_id,
+                title: m.title,
+                genres: m.genres.into_iter().map(|genre| genre.name).collect(),
+                keywords: self.get_keywords(id)?,
+                homepage: m.homepage, 
+                popularity: m.popularity,
+                release_date: m.release_date,
+                revenue: m.revenue,
+                runtime: m.runtime, 
+                tagline: m.tagline,
+                vote_average: m.vote_average,
+            } 
+        )
+
+    }
+
+    fn get_raw_movie(&mut self, id: i32) -> Result<RawMovie, Error> {
+        let url = format!(
+            "https://api.themoviedb.org/3/movie/{}?api_key={}&language=en-US",
+            id,
+            &self.key
+        );
+
+        let data = self.query(&url)?;
+
+        Ok(from_str(&data)?)
+    }
+
+    fn get_keywords(&mut self, id: i32) -> Result<Vec<String>, Error> {
+        let url = format!(
+            "https://api.themoviedb.org/3/movie/{}/keywords?api_key={}&language=en-US",
+            id,
+            &self.key
+        );
+
+        let data = self.query(&url)?;
+
+        Ok(
+            from_str::<Keywords>(&data)?.keywords
+                .into_iter()
+                .map(|word| word.name)
+                .collect()
+        )
+    }
 }
