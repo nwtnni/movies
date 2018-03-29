@@ -3,6 +3,7 @@ use serde_json::from_str;
 use failure::Error;
 use std::{thread, time, env};
 
+/// Represents a movie from TMDB.
 #[derive(Serialize)]
 pub struct Movie {
     pub id: i32,
@@ -77,6 +78,7 @@ lazy_static! {
     static ref DELAY: time::Duration = time::Duration::from_millis(250);
 }
 
+/// Represents a TMDB connection with API key and rate limiting.
 pub struct TMDB {
     last_query: time::Instant,
     key: String,

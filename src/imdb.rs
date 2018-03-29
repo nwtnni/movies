@@ -4,10 +4,12 @@ use failure::Error;
 use select::document::Document;
 use select::predicate::{Predicate, Attr, Class, Name};
 
+/// Returns the website of movie with IMDB ID $id
 macro_rules! home_url {
     ( $id:expr ) => ( format!("http://www.imdb.com/title/{}/", $id) )
 }
 
+/// Returns the absolute path of IMDB relative path $path
 macro_rules! abs_url {
     ( $path:expr ) => ( format!("http://www.imdb.com{}", $path) )
 }
@@ -18,6 +20,7 @@ enum IMDBError {
     MissingLink
 }
 
+/// Returns the URL of the poster of movie with IMDB ID [id]
 pub fn get_poster(id: &str) -> Result<String, Error> {
 
     let url = home_url!(id);
