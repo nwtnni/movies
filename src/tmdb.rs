@@ -8,6 +8,8 @@ use std::{thread, time, env};
 pub struct Movie {
     pub id: i32,
     pub imdb_id: String,
+    pub cast: Vec<Cast>,
+    pub crew: Vec<Crew>,
     pub title: String,
     pub genres: Vec<String>,
     pub keywords: Vec<String>,
@@ -23,6 +25,24 @@ pub struct Movie {
 #[derive(Deserialize)]
 struct MovieID {
     pub id: i32
+}
+
+#[derive(Deserialize)]
+struct Credits {
+    cast: Vec<Cast>,
+    crew: Vec<Crew>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Cast {
+    pub character: String,
+    pub name: String,  
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct Crew {
+    pub job: String,
+    pub name: String,
 }
 
 #[derive(Deserialize)]
@@ -124,12 +144,15 @@ impl TMDB {
     pub fn get_movie(&mut self, id: i32) -> Result<Movie, Error> {
 
         let m = self.get_raw_movie(id)?;
+        let (cast, crew) = self.get_people(id)?;
         if !m.is_english() { Err(TMDBError::NonEnglish)? }
 
         Ok(
             Movie {
                 id: m.id,
                 imdb_id: m.imdb_id,
+                cast: cast,
+                crew: crew,
                 title: m.title,
                 genres: m.genres.into_iter().map(|genre| genre.name).collect(),
                 keywords: self.get_keywords(id)?,
@@ -142,7 +165,6 @@ impl TMDB {
                 vote_average: m.vote_average,
             } 
         )
-
     }
 
     fn get_raw_movie(&mut self, id: i32) -> Result<RawMovie, Error> {
@@ -172,5 +194,27 @@ impl TMDB {
                 .map(|word| word.name)
                 .collect()
         )
+    }
+
+    pub fn get_people(&mut self, id: i32) -> Result<(Vec<Cast>, Vec<Crew>), Error> {
+        let url = format!(
+            "https://api.themoviedb.org/3/movie/{}/credits?api_key={}&language=en-US",
+            id,
+            &self.key
+        );
+
+        let data = self.query(&url)?;
+        let mut credits = from_str::<Credits>(&data)?;
+
+        credits.crew.retain(|crew| {
+            match crew.job.as_ref() {
+            | "Director" | "Producer" | "Writer" | "Screenplay" | "Original Music Composer" => true,
+            | _ => false,
+            }                
+        });
+
+        credits.cast.retain(|cast| !cast.character.is_empty() && !cast.name.is_empty());
+        credits.cast.truncate(20);
+        return Ok((credits.cast, credits.crew));
     }
 }
