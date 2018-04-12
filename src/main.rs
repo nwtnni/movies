@@ -16,7 +16,7 @@ use movies::movie::Movie;
 pub fn main() {
 
     let mut tmdb = TMDB::default();
-    let _ = WriteLogger::init(LevelFilter::Debug, Config::default(), File::create("movies.log").unwrap());
+    let _ = WriteLogger::init(LevelFilter::Info, Config::default(), File::create("movies.log").unwrap());
     let _ = create_dir("posters");
     let _ = create_dir("movies");
     let mut index = File::create("movies.json").unwrap();
@@ -27,7 +27,7 @@ pub fn main() {
         match Movie::save(id, &mut tmdb) {
         | Err(err) => error!("{}: {}", id, err),
         | Ok(movie) => {
-            info!("{}: {}", id, movie.title);
+            info!("[SUCCESS] {}: {}", id, movie.title);
 
             if let Ok(json) = serde_json::to_string(&movie) {
                 if let Err(e) = index.write_all(format!("    {},\n", json).as_bytes()) {
