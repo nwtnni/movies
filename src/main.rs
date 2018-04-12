@@ -25,7 +25,7 @@ pub fn main() {
 
     for id in 1..(max + 1) {
         match Movie::save(id, &mut tmdb) {
-        | Err(warning) => warn!("{}", warning),
+        | Err(err) => error!("{}", err),
         | Ok(movie) => {
             info!("Succesfully processed {}", movie.title);
 
