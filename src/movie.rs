@@ -67,10 +67,10 @@ impl Movie {
             .get_summary()
             .or_else(|error| {
                 match &movie.overview {
-                | &None => Err(TMDBError::Data { id }),
+                | &None => Err(IMDBError::Summary { name: movie.title.clone() }),
                 | &Some(ref text) => {
                     if text.is_empty() {
-                        Err(TMDBError::Data { id })
+                        Err(IMDBError::Summary { name: movie.title.clone() })
                     } else {
                         warn!("{}; using overview of length {} instead", error, text.len());
                         Ok(text.to_owned())

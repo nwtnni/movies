@@ -34,7 +34,6 @@ pub struct RawMovie {
     pub release_date: String,
     pub revenue: f32,
     pub runtime: i32, 
-    pub status: String,
     pub vote_average: f32,
 }
 
@@ -61,9 +60,6 @@ pub enum TMDBError {
 
     #[fail(display = "{}: non-English movie", id)]
     English { id: i32},
-
-    #[fail(display = "{}: missing TMDB data", id)]
-    Data { id: i32 },
 
     #[fail(display = "{}: missing runtime", id)]
     Runtime { id: i32 },
@@ -134,7 +130,7 @@ impl TMDB {
         );
 
         let data = self.query(&url)?;
-        let movie: RawMovie = from_str(&data).map_err(|_| TMDBError::Data { id })?;
+        let movie: RawMovie = from_str(&data)?;
 
         if movie.original_language != "en" {
             Err(TMDBError::English { id })?
