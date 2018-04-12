@@ -64,7 +64,14 @@ impl Movie {
 
         let imdb = IMDB::new(&movie.imdb_id, &movie.title)?;
         let summary = imdb.get_summary()?;
-        let synopsis = imdb.get_synopsis()?.to_lowercase();
+
+        let synopsis = imdb
+            .get_synopsis()
+            .unwrap_or_else(|error| {
+                warn!("{}; using summary of length {} instead", error, summary.len());
+                summary.clone()
+            });
+
         let tokens = tokenize(&synopsis)
             .into_iter()
             .filter(|word| !STOP_WORDS.contains(word))
@@ -76,27 +83,30 @@ impl Movie {
         let mut poster = reqwest::get(&link)?;
         poster.copy_to(&mut poster_file)?;
 
-        let result = Movie {
-            id: movie.imdb_id,
-            cast: cast,
-            crew: crew,
-            title: movie.title,
-            genres: movie.genres.into_iter().map(|genre| genre.name).collect(),
-            keywords: keywords,
-            popularity: movie.popularity,
-            release_date: movie.release_date,
-            revenue: movie.revenue,
-            runtime: movie.runtime, 
-            summary: summary,
-            tokens: tokens,
-            vote_average: movie.vote_average,
-        };
+        let mut movie_file = File::create(format!("movies/{}.json", movie.imdb_id))?;
+        movie_file.write_all(
+            serde_json::to_string(
+                &Movie {
+                    id: movie.imdb_id.clone(),
+                    cast: cast,
+                    crew: crew,
+                    title: movie.title.clone(),
+                    genres: movie.genres.into_iter().map(|genre| genre.name).collect(),
+                    keywords: keywords,
+                    popularity: movie.popularity,
+                    release_date: movie.release_date,
+                    revenue: movie.revenue,
+                    runtime: movie.runtime, 
+                    summary: summary,
+                    tokens: tokens,
+                    vote_average: movie.vote_average,
+                }
+            )?.as_bytes()
+        )?;
 
-        let mut movie_file = File::create(format!("movies/{}.json", result.id))?;
-        movie_file.write_all(serde_json::to_string(&result)?.as_bytes())?;
         Ok(Index{
-            id: result.id.clone(),
-            title: result.title.clone(),
+            id: movie.imdb_id,
+            title: movie.title,
         })
     }
 }

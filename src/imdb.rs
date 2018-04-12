@@ -78,6 +78,7 @@ impl IMDB {
                     element.text()
                         .next()
                         .unwrap_or("")
+                        .trim()
                         .to_owned()
                 })
                 .filter(|summary| !summary.is_empty())
@@ -98,9 +99,10 @@ impl IMDB {
         Ok(
             Html::parse_document(&synopsis)
                 .select(&*TEXT)
+                .filter(|element| element.value().id() != Some("no-synopsis-content"))
                 .map(|element| {
                     element.text()
-                        .map(|s| s.to_owned())
+                        .map(|s| s.trim().to_owned())
                         .collect::<Vec<_>>()
                         .join("\n")
                 })

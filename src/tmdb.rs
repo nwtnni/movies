@@ -88,6 +88,17 @@ impl TMDB {
         Ok(data)
     }
 
+    pub fn get_latest(&mut self) -> Result<i32, Error> {
+        let url = format!(
+            "https://api.themoviedb.org/3/movie/latest?api_key={}&language=en-US",
+            &self.key,
+        );
+
+        let data = self.query(&url)?;
+        let movie: MovieID = from_str(&data)?;
+        Ok(movie.id)
+    }
+
     pub fn get_page(&mut self, page: i32) -> Result<Vec<i32>, Error> {
         let url = format!(
             "https://api.themoviedb.org/3/movie/popular?api_key={}&language=en-US&page={}",
