@@ -42,7 +42,6 @@ lazy_static! {
 
     static ref HYPERLINK: Regex = Regex::new(r"\s*\(\s*<a[^>]*>[^<]*</a>\s*\)").unwrap();
     static ref WRITTEN_BY: Regex = Regex::new(r"(?s:\s*<em.*>\s*)").unwrap();
-    static ref BREAK: Regex = Regex::new(r"\s*<br>").unwrap();
 }
 
 pub struct IMDB {
@@ -108,8 +107,10 @@ impl IMDB {
                 .select(&*TEXT)
                 .filter(|element| element.value().id() != Some("no-synopsis-content"))
                 .map(|element| {
-                    let s = HYPERLINK.replace_all(element.inner_html().trim(), "").to_string();
-                    BREAK.replace_all(&s, "").to_string()
+                    element.text()
+                        .map(|s| s.trim().to_owned())
+                        .collect::<Vec<_>>()
+                        .join("\n")
                 })
                 .filter(|synopsis| !synopsis.is_empty())
                 .next()
