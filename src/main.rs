@@ -30,8 +30,8 @@ pub fn main() {
                     //     println!("Could not find poster for {}.", movie.title);
                     // }
 
-                    if let Ok(summary) = imdb.get_summary() {
-                        println!("{}", summary);
+                    if let Ok(synopsis) = imdb.get_synopsis() {
+                        println!("{}", synopsis);
                     }
                 }
             }

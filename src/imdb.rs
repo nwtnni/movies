@@ -24,18 +24,17 @@ enum IMDBError {
 
     #[fail(display = "Missing summary")]
     Summary,
+
+    #[fail(display = "Missing synopsis")]
+    Synopsis,
 }
 
 lazy_static! {
     static ref POSTER: Selector = Selector::parse(".poster a[href]").unwrap();
-}
-
-lazy_static! {
     static ref IMAGE: Selector = Selector::parse("meta[property=\"og:image\"][content]").unwrap();
-}
-
-lazy_static! {
     static ref SUMMARY: Selector = Selector::parse("#titleStoryLine [itemprop=description] p").unwrap();
+    static ref SYNOPSIS: Selector = Selector::parse("#titleStoryLine .see-more a[href]").unwrap();
+    static ref TEXT: Selector = Selector::parse("#plot-synopsis-content .ipl-zebra-list__item").unwrap();
 }
 
 pub struct IMDB {
@@ -83,5 +82,28 @@ impl IMDB {
                 .next()
                 .ok_or(IMDBError::Summary)?
         )
+    }
+
+    pub fn get_synopsis(&self) -> Result<String, Error> {
+        let link = self.home.select(&*SYNOPSIS)
+            .map(|element| element.value().attr("href").unwrap())
+            .next()
+            .ok_or(IMDBError::Synopsis)?
+            .to_owned();
+
+        let synopsis = reqwest::get(&abs_url!(link))?.text()?;
+
+        Ok(
+            Html::parse_document(&synopsis)
+                .select(&*TEXT)
+                .map(|element| {
+                    element.text()
+                        .map(|s| s.to_owned())
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                })
+                .next()
+                .ok_or(IMDBError::Synopsis)?
+        ) 
     }
 }
