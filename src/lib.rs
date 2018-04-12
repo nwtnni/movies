@@ -7,6 +7,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate scraper;
 extern crate reqwest;
+extern crate regex;
 extern crate stopwords;
 extern crate natural;
 

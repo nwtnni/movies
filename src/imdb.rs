@@ -1,6 +1,7 @@
 use reqwest;
 use failure::Error;
 
+use regex::Regex;
 use scraper::Html;
 use scraper::Selector;
 
@@ -38,6 +39,10 @@ lazy_static! {
     static ref SUMMARY: Selector = Selector::parse("#titleStoryLine [itemprop=description] p").unwrap();
     static ref SYNOPSIS: Selector = Selector::parse("#titleStoryLine .see-more a[href]").unwrap();
     static ref TEXT: Selector = Selector::parse("#plot-synopsis-content .ipl-zebra-list__item").unwrap();
+
+    static ref HYPERLINK: Regex = Regex::new(r"\s*\(\s*<a[^>]*>[^<]*</a>\s*\)").unwrap();
+    static ref WRITTEN_BY: Regex = Regex::new(r"(?s:\s*<em.*>\s*)").unwrap();
+    static ref BREAK: Regex = Regex::new(r"\s*<br>").unwrap();
 }
 
 pub struct IMDB {
@@ -80,11 +85,8 @@ impl IMDB {
         Ok(
             self.home.select(&*SUMMARY)
                 .map(|element| {
-                    element.text()
-                        .next()
-                        .unwrap_or("")
-                        .trim()
-                        .to_owned()
+                    let s = HYPERLINK.replace_all(element.inner_html().trim(), "").to_string();
+                    WRITTEN_BY.replace_all(&s, "").to_string()
                 })
                 .filter(|summary| !summary.is_empty())
                 .next()
@@ -106,10 +108,8 @@ impl IMDB {
                 .select(&*TEXT)
                 .filter(|element| element.value().id() != Some("no-synopsis-content"))
                 .map(|element| {
-                    element.text()
-                        .map(|s| s.trim().to_owned())
-                        .collect::<Vec<_>>()
-                        .join("\n")
+                    let s = HYPERLINK.replace_all(element.inner_html().trim(), "").to_string();
+                    BREAK.replace_all(&s, "").to_string()
                 })
                 .filter(|synopsis| !synopsis.is_empty())
                 .next()
