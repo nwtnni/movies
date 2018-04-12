@@ -13,6 +13,8 @@ use simplelog::*;
 use movies::tmdb::*;
 use movies::movie::Movie;
 
+const PAGES: i32 = 999;
+
 pub fn main() {
 
     let mut tmdb = TMDB::default();
@@ -22,7 +24,7 @@ pub fn main() {
     let mut index = File::create("movies.json").unwrap();
     index.write(b"[\n").unwrap();
 
-    for n in 1..2 {
+    for n in 1..PAGES {
         if let Ok(page) = tmdb.get_page(n) {
             for id in page {
                 match Movie::save(id, &mut tmdb) {
