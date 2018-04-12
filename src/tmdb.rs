@@ -55,14 +55,14 @@ struct Page {
 
 #[derive(Debug, Fail)]
 pub enum TMDBError {
-    #[fail(display = "{}: adult movie", id)]
-    Adult { id: i32 },
+    #[fail(display = "{} is an adult movie", name)]
+    Adult { name: String },
 
-    #[fail(display = "{}: non-English movie", id)]
-    English { id: i32},
+    #[fail(display = "{} is not English", name)]
+    English { name: String },
 
-    #[fail(display = "{}: missing runtime", id)]
-    Runtime { id: i32 },
+    #[fail(display = "{}: is missing runtime", name)]
+    Runtime { name: String },
 }
 
 lazy_static! {
@@ -133,11 +133,11 @@ impl TMDB {
         let movie: RawMovie = from_str(&data)?;
 
         if movie.original_language != "en" {
-            Err(TMDBError::English { id })?
+            Err(TMDBError::English { name: movie.title })?
         } else if movie.adult {
-            Err(TMDBError::Adult { id })?
+            Err(TMDBError::Adult { name: movie.title })?
         } else if movie.runtime == 0 {
-            Err(TMDBError::Runtime { id })?
+            Err(TMDBError::Runtime { name: movie.title })?
         } else {
             Ok(movie)
         }

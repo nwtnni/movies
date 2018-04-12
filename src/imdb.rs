@@ -16,19 +16,19 @@ macro_rules! abs_url {
 
 #[derive(Debug, Fail)]
 pub enum IMDBError {
-    #[fail(display = "{}: unavailable on IMDB", id)]
+    #[fail(display = "{} is unavailable on IMDB", id)]
     Home { id: String },
 
-    #[fail(display = "{}: missing link", name)]
+    #[fail(display = "{} is missing link to poster", name)]
     Image { name: String },
 
-    #[fail(display = "{}: missing poster", name)]
+    #[fail(display = "{} is missing poster", name)]
     Poster { name: String },
 
-    #[fail(display = "{}: missing summary", name)]
+    #[fail(display = "{} is missing summary", name)]
     Summary { name: String },
 
-    #[fail(display = "{}: missing synopsis", name)]
+    #[fail(display = "{} is missing synopsis", name)]
     Synopsis { name: String },
 }
 

@@ -25,13 +25,13 @@ pub fn main() {
 
     for id in 1..(max + 1) {
         match Movie::save(id, &mut tmdb) {
-        | Err(err) => error!("{}", err),
+        | Err(err) => error!("{}: {}", id, err),
         | Ok(movie) => {
-            info!("Succesfully processed {}", movie.title);
+            info!("{}: {}", id, movie.title);
 
             if let Ok(json) = serde_json::to_string(&movie) {
                 if let Err(e) = index.write_all(format!("    {},\n", json).as_bytes()) {
-                    error!("Write error: {}", e);
+                    error!("Write error for {}: {}", id, e);
                 }
             }
         }
