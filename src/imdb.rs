@@ -16,6 +16,9 @@ macro_rules! abs_url {
 
 #[derive(Debug, Fail)]
 pub enum IMDBError {
+    #[fail(display = "{}: unavailable on IMDB", id)]
+    Home { id: String },
+
     #[fail(display = "{}: missing link", name)]
     Image { name: String },
 
@@ -45,7 +48,9 @@ pub struct IMDB {
 impl IMDB {
     pub fn new(id: &str, name: &str) -> Result<Self, Error> {
         let home = Html::parse_document(
-            &reqwest::get(&home_url!(id))?.text()?
+            &reqwest::get(&home_url!(id))
+                .map_err(|_| IMDBError::Home { id: id.to_owned() })?
+                .text()?
         );
         Ok(IMDB { name: name.to_owned(), home })
     }
