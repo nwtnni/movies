@@ -1,40 +1,45 @@
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate log;
+extern crate simplelog;
 extern crate movies;
 extern crate failure;
 extern crate reqwest;
+extern crate serde_json;
 
-use std::env;
+use std::io::Write;
 use std::fs::File;
-use failure::Error;
-use movies::tmdb;
-use movies::imdb;
+use std::fs::create_dir;
+use simplelog::*;
+
+use movies::tmdb::*;
+use movies::movie::Movie;
 
 pub fn main() {
 
-    let mut tmdb = tmdb::TMDB::default();
+    let mut tmdb = TMDB::default();
+    let _ = WriteLogger::init(LevelFilter::Info, Config::default(), File::create("movies.log").unwrap());
+    let _ = create_dir("posters").unwrap();
+    let _ = create_dir("movies").unwrap();
+    let mut index = File::create("movies.json").unwrap();
+    index.write(b"[\n").unwrap();
 
     for n in 1..2 {
         if let Ok(page) = tmdb.get_page(n) {
             for id in page {
-                if let Ok(movie) = tmdb.get_movie(id) {
-                     
-                    let imdb = imdb::IMDB::new(&movie.imdb_id).unwrap();
+                match Movie::save(id, &mut tmdb) {
+                | Err(warning) => warn!("{}", warning),
+                | Ok(movie) => {
+                    info!("Succesfully processed {}", movie.title);
 
-                    // if let Ok(link) = imdb.get_poster() {
-                    //     println!("Saving poster for {}...", movie.title);
-                    //     let mut file = File::create(format!("{}.jpg", movie.title)).unwrap();
-                    //     let mut poster = reqwest::get(&link).unwrap();
-                    //     poster.copy_to(&mut file).unwrap();
-                    // } else {
-                    //     println!("Could not find poster for {}.", movie.title);
-                    // }
-
-                    if let Ok(synopsis) = imdb.get_synopsis() {
-                        println!("{}", synopsis);
+                    if let Ok(json) = serde_json::to_string(&movie) {
+                        if let Err(e) = index.write_all(format!("    {},\n", json).as_bytes()) {
+                            error!("Write error: {}", e);
+                        }
                     }
+                }
                 }
             }
         }
     }
+
+    index.write(b"\n]").unwrap();
 }

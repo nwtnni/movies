@@ -15,18 +15,18 @@ macro_rules! abs_url {
 }
 
 #[derive(Debug, Fail)]
-enum IMDBError {
-    #[fail(display = "Missing link")]
-    Image,
+pub enum IMDBError {
+    #[fail(display = "{}: missing link", name)]
+    Image { name: String },
 
-    #[fail(display = "Missing poster")]
-    Poster,
+    #[fail(display = "{}: missing poster", name)]
+    Poster { name: String },
 
-    #[fail(display = "Missing summary")]
-    Summary,
+    #[fail(display = "{}: missing summary", name)]
+    Summary { name: String },
 
-    #[fail(display = "Missing synopsis")]
-    Synopsis,
+    #[fail(display = "{}: missing synopsis", name)]
+    Synopsis { name: String },
 }
 
 lazy_static! {
@@ -38,15 +38,16 @@ lazy_static! {
 }
 
 pub struct IMDB {
+    name: String,
     home: Html,
 }
 
 impl IMDB {
-    pub fn new(id: &str) -> Result<Self, Error> {
+    pub fn new(id: &str, name: &str) -> Result<Self, Error> {
         let home = Html::parse_document(
             &reqwest::get(&home_url!(id))?.text()?
         );
-        Ok(IMDB { home })
+        Ok(IMDB { name: name.to_owned(), home })
     }
 
     /// Returns the URL of the poster of movie with IMDB ID [id]
@@ -55,7 +56,7 @@ impl IMDB {
         let link = self.home.select(&*POSTER)
             .map(|element| element.value().attr("href").unwrap())
             .next()
-            .ok_or(IMDBError::Poster)?
+            .ok_or(IMDBError::Poster { name: self.name.clone() })?
             .to_owned();
         
         let poster = reqwest::get(&abs_url!(link))?.text()?;
@@ -65,7 +66,7 @@ impl IMDB {
                 .select(&*IMAGE)
                 .map(|element| element.value().attr("content").unwrap())
                 .next()
-                .ok_or(IMDBError::Image)?
+                .ok_or(IMDBError::Image { name: self.name.clone() })?
                 .to_owned()
         )
     }
@@ -79,8 +80,9 @@ impl IMDB {
                         .unwrap_or("")
                         .to_owned()
                 })
+                .filter(|summary| !summary.is_empty())
                 .next()
-                .ok_or(IMDBError::Summary)?
+                .ok_or(IMDBError::Summary { name: self.name.clone() })?
         )
     }
 
@@ -88,7 +90,7 @@ impl IMDB {
         let link = self.home.select(&*SYNOPSIS)
             .map(|element| element.value().attr("href").unwrap())
             .next()
-            .ok_or(IMDBError::Synopsis)?
+            .ok_or(IMDBError::Synopsis { name: self.name.clone() })?
             .to_owned();
 
         let synopsis = reqwest::get(&abs_url!(link))?.text()?;
@@ -102,8 +104,9 @@ impl IMDB {
                         .collect::<Vec<_>>()
                         .join("\n")
                 })
+                .filter(|synopsis| !synopsis.is_empty())
                 .next()
-                .ok_or(IMDBError::Synopsis)?
-        ) 
+                .ok_or(IMDBError::Synopsis { name: self.name.clone() })?
+        )
     }
 }
