@@ -1,8 +1,8 @@
 use reqwest;
 use failure::Error;
 
-use select::document::Document;
-use select::predicate::{Predicate, Attr, Class, Name};
+use scraper::Html;
+use scraper::Selector;
 
 /// Returns the website of movie with IMDB ID $id
 macro_rules! home_url {
@@ -20,27 +20,36 @@ enum IMDBError {
     MissingLink
 }
 
+lazy_static! {
+    static ref POSTER: Selector = Selector::parse(".poster a[href]").unwrap();
+}
+
+lazy_static! {
+    static ref IMAGE: Selector = Selector::parse("meta[property=\"og:image\"][content]").unwrap();
+}
+
 /// Returns the URL of the poster of movie with IMDB ID [id]
 pub fn get_poster(id: &str) -> Result<String, Error> {
 
     let url = home_url!(id);
-    let home = reqwest::get(&url)?;
-    let link = Document::from_read(home)?
-        .find(Class("poster").child(Name("a")))
-        .filter_map(|node| node.attr("href"))
-        .map(|rel| abs_url!(rel))
+    println!("{}", &url);
+    let mut home = reqwest::get(&url)?;
+    let link = Html::parse_document(&home.text()?)
+        .select(&*POSTER)
+        .map(|element| element.value().attr("href").unwrap())
         .next()
-        .ok_or(IMDBError::MissingLink)?;
+        .ok_or(IMDBError::MissingLink)?
+        .to_owned();
     
-    let poster = reqwest::get(&link)?;
-    println!("Found poster site {}", link);
+    let mut poster = reqwest::get(&abs_url!(link))?;
+    println!("{}", abs_url!(link));
 
     Ok(
-        Document::from_read(poster)?
-            .find(Name("meta").and(Attr("property", "og:image")))
-            .filter_map(|node| node.attr("content"))
-            .map(|link| link.to_owned())
+        Html::parse_document(&poster.text()?)
+            .select(&*IMAGE)
+            .map(|element| element.value().attr("content").unwrap())
             .next()
             .ok_or(IMDBError::MissingLink)?
+            .to_owned()
     )
 }
