@@ -16,7 +16,7 @@ use movies::movie::Movie;
 pub fn main() {
 
     let mut tmdb = TMDB::default();
-    let _ = WriteLogger::init(LevelFilter::Info, Config::default(), File::create("movies.log").unwrap());
+    let _ = WriteLogger::init(LevelFilter::Debug, Config::default(), File::create("movies.log").unwrap());
     let _ = create_dir("posters");
     let _ = create_dir("movies");
     let mut index = File::create("movies.json").unwrap();

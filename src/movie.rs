@@ -72,7 +72,7 @@ impl Movie {
                     if text.is_empty() {
                         Err(IMDBError::Summary { name: movie.title.clone() })
                     } else {
-                        warn!("{}; using overview of length {} instead", error, text.len());
+                        warn!("{}; Using overview of length: {}", error, text.len());
                         Ok(text.to_owned())
                     }
                 }
@@ -81,8 +81,12 @@ impl Movie {
 
         let synopsis = imdb
             .get_synopsis()
+            .and_then(|text| {
+                debug!("Using synopsis of length: {}", text.len());
+                Ok(text)
+            })
             .unwrap_or_else(|error| {
-                warn!("{}; using summary of length {} instead", error, summary.len());
+                warn!("{}; Using summary of length: {}", error, summary.len());
                 summary.clone()
             });
 
