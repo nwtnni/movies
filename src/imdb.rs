@@ -17,7 +17,13 @@ macro_rules! abs_url {
 #[derive(Debug, Fail)]
 enum IMDBError {
     #[fail(display = "Missing link")]
-    MissingLink
+    Image,
+
+    #[fail(display = "Missing poster")]
+    Poster,
+
+    #[fail(display = "Missing summary")]
+    Summary,
 }
 
 lazy_static! {
@@ -28,28 +34,54 @@ lazy_static! {
     static ref IMAGE: Selector = Selector::parse("meta[property=\"og:image\"][content]").unwrap();
 }
 
-/// Returns the URL of the poster of movie with IMDB ID [id]
-pub fn get_poster(id: &str) -> Result<String, Error> {
+lazy_static! {
+    static ref SUMMARY: Selector = Selector::parse("#titleStoryLine [itemprop=description] p").unwrap();
+}
 
-    let url = home_url!(id);
-    println!("{}", &url);
-    let mut home = reqwest::get(&url)?;
-    let link = Html::parse_document(&home.text()?)
-        .select(&*POSTER)
-        .map(|element| element.value().attr("href").unwrap())
-        .next()
-        .ok_or(IMDBError::MissingLink)?
-        .to_owned();
-    
-    let mut poster = reqwest::get(&abs_url!(link))?;
-    println!("{}", abs_url!(link));
+pub struct IMDB {
+    home: Html,
+}
 
-    Ok(
-        Html::parse_document(&poster.text()?)
-            .select(&*IMAGE)
-            .map(|element| element.value().attr("content").unwrap())
+impl IMDB {
+    pub fn new(id: &str) -> Result<Self, Error> {
+        let home = Html::parse_document(
+            &reqwest::get(&home_url!(id))?.text()?
+        );
+        Ok(IMDB { home })
+    }
+
+    /// Returns the URL of the poster of movie with IMDB ID [id]
+    pub fn get_poster(&self) -> Result<String, Error> {
+
+        let link = self.home.select(&*POSTER)
+            .map(|element| element.value().attr("href").unwrap())
             .next()
-            .ok_or(IMDBError::MissingLink)?
-            .to_owned()
-    )
+            .ok_or(IMDBError::Poster)?
+            .to_owned();
+        
+        let poster = reqwest::get(&abs_url!(link))?.text()?;
+
+        Ok(
+            Html::parse_document(&poster)
+                .select(&*IMAGE)
+                .map(|element| element.value().attr("content").unwrap())
+                .next()
+                .ok_or(IMDBError::Image)?
+                .to_owned()
+        )
+    }
+
+    pub fn get_summary(&self) -> Result<String, Error> {
+        Ok(
+            self.home.select(&*SUMMARY)
+                .map(|element| {
+                    element.text()
+                        .next()
+                        .unwrap_or("")
+                        .to_owned()
+                })
+                .next()
+                .ok_or(IMDBError::Summary)?
+        )
+    }
 }

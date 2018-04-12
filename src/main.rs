@@ -18,13 +18,20 @@ pub fn main() {
         if let Ok(page) = tmdb.get_page(n) {
             for id in page {
                 if let Ok(movie) = tmdb.get_movie(id) {
-                    if let Ok(link) = imdb::get_poster(&movie.imdb_id) {
-                        println!("Saving poster for {}...", movie.title);
-                        let mut file = File::create(format!("{}.jpg", movie.title)).unwrap();
-                        let mut poster = reqwest::get(&link).unwrap();
-                        poster.copy_to(&mut file).unwrap();
-                    } else {
-                        println!("Could not find poster for {}.", movie.title);
+                     
+                    let imdb = imdb::IMDB::new(&movie.imdb_id).unwrap();
+
+                    // if let Ok(link) = imdb.get_poster() {
+                    //     println!("Saving poster for {}...", movie.title);
+                    //     let mut file = File::create(format!("{}.jpg", movie.title)).unwrap();
+                    //     let mut poster = reqwest::get(&link).unwrap();
+                    //     poster.copy_to(&mut file).unwrap();
+                    // } else {
+                    //     println!("Could not find poster for {}.", movie.title);
+                    // }
+
+                    if let Ok(summary) = imdb.get_summary() {
+                        println!("{}", summary);
                     }
                 }
             }
