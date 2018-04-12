@@ -63,7 +63,21 @@ impl Movie {
         let keywords = tmdb.get_keywords(id)?;
 
         let imdb = IMDB::new(&movie.imdb_id, &movie.title)?;
-        let summary = imdb.get_summary()?;
+        let summary = imdb
+            .get_summary()
+            .or_else(|error| {
+                match &movie.overview {
+                | &None => Err(TMDBError::Data { id }),
+                | &Some(ref text) => {
+                    if text.is_empty() {
+                        Err(TMDBError::Data { id })
+                    } else {
+                        warn!("{}; using overview of length {} instead", error, text.len());
+                        Ok(text.to_owned())
+                    }
+                }
+                }
+            })?;
 
         let synopsis = imdb
             .get_synopsis()

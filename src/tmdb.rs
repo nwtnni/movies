@@ -26,12 +26,15 @@ pub struct RawMovie {
     pub id: i32,
     pub imdb_id: String,
     pub title: String,
+    pub adult: bool,
     pub genres: Vec<Genre>,
     pub original_language: String,
+    pub overview: Option<String>,
     pub popularity: f32,
     pub release_date: String,
     pub revenue: f32,
     pub runtime: i32, 
+    pub status: String,
     pub vote_average: f32,
 }
 
@@ -53,11 +56,17 @@ struct Page {
 
 #[derive(Debug, Fail)]
 pub enum TMDBError {
+    #[fail(display = "{}: adult movie", id)]
+    Adult { id: i32 },
+
     #[fail(display = "{}: non-English movie", id)]
     English { id: i32},
 
     #[fail(display = "{}: missing TMDB data", id)]
     Data { id: i32 },
+
+    #[fail(display = "{}: missing runtime", id)]
+    Runtime { id: i32 },
 }
 
 lazy_static! {
@@ -127,10 +136,14 @@ impl TMDB {
         let data = self.query(&url)?;
         let movie: RawMovie = from_str(&data).map_err(|_| TMDBError::Data { id })?;
 
-        if movie.original_language == "en" {
-            Ok(movie)
-        } else {
+        if movie.original_language != "en" {
             Err(TMDBError::English { id })?
+        } else if movie.adult {
+            Err(TMDBError::Adult { id })?
+        } else if movie.runtime == 0 {
+            Err(TMDBError::Runtime { id })?
+        } else {
+            Ok(movie)
         }
     }
 
