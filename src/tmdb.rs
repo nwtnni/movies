@@ -28,7 +28,6 @@ pub struct RawMovie {
     pub title: String,
     pub adult: bool,
     pub genres: Vec<Genre>,
-    pub original_language: String,
     pub overview: Option<String>,
     pub popularity: f32,
     pub release_date: String,
@@ -57,9 +56,6 @@ struct Page {
 pub enum TMDBError {
     #[fail(display = "{} is an adult movie", name)]
     Adult { name: String },
-
-    #[fail(display = "{} is not English", name)]
-    English { name: String },
 
     #[fail(display = "{}: is missing runtime", name)]
     Runtime { name: String },
@@ -132,9 +128,7 @@ impl TMDB {
         let data = self.query(&url)?;
         let movie: RawMovie = from_str(&data)?;
 
-        if movie.original_language != "en" {
-            Err(TMDBError::English { name: movie.title })?
-        } else if movie.adult {
+        if movie.adult {
             Err(TMDBError::Adult { name: movie.title })?
         } else if movie.runtime == 0 {
             Err(TMDBError::Runtime { name: movie.title })?
