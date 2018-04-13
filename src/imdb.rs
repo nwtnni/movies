@@ -56,11 +56,8 @@ lazy_static! {
     static ref TEXT: Selector = Selector::parse("#plot-synopsis-content .ipl-zebra-list__item").unwrap();
     static ref RATING: Selector = Selector::parse("meta[itemprop=contentRating][content]").unwrap();
 
-    static ref IMDB_SCORE_VALUE: Selector = Selector::parse("span[itemprop=ratingValue]").unwrap();
-    static ref IMDB_SCORE_COUNT: Selector = Selector::parse("span[itemprop=ratingCount]").unwrap();
-
-    static ref METACRITIC_SCORE_VALUE: Selector = Selector::parse("span[itemprop=ratingValue]").unwrap();
-    static ref METACRITIC_SCORE_COUNT: Selector = Selector::parse("span[itemprop=ratingCount]").unwrap();
+    static ref SCORE_VALUE: Selector = Selector::parse("span[itemprop=ratingValue]").unwrap();
+    static ref SCORE_COUNT: Selector = Selector::parse("span[itemprop=ratingCount]").unwrap();
 
     static ref HYPERLINK: Regex = Regex::new(r"(\(\s*)?<a[^>]*>([^<]*)</a>(?:\s*\)\s*)?").unwrap();
     static ref WRITTEN_BY: Regex = Regex::new(r"(?s:\s*<em.*>\s*)").unwrap();
@@ -115,12 +112,12 @@ impl IMDB {
     }
 
     pub fn get_imdb_score(&self) -> Result<(f32, i32), Error> {
-        let value = self.home.select(&*IMDB_SCORE_VALUE) 
+        let value = self.home.select(&*SCORE_VALUE) 
             .map(|element| f32::from_str(&element.inner_html()))
             .next()
             .ok_or(IMDBError::IMDBScore { name: self.name.clone() })??;
         
-        let count = self.home.select(&*IMDB_SCORE_COUNT) 
+        let count = self.home.select(&*SCORE_COUNT) 
             .map(|element| i32::from_str(&element.inner_html().replace(",", "")))
             .next()
             .ok_or(IMDBError::IMDBScore { name: self.name.clone() })??;
@@ -134,12 +131,12 @@ impl IMDB {
             &reqwest::get(&metacritic_url!(self.id))?.text()?
         );
 
-        let value = metacritic.select(&*METACRITIC_SCORE_VALUE)
+        let value = metacritic.select(&*SCORE_VALUE)
             .map(|element| f32::from_str(&element.inner_html()))
             .next()
             .ok_or(IMDBError::MetacriticScore { name: self.name.clone() })??;
 
-        let count = self.home.select(&*METACRITIC_SCORE_COUNT)
+        let count = metacritic.select(&*SCORE_COUNT)
             .map(|element| i32::from_str(&element.inner_html().replace(",", "")))
             .next()
             .ok_or(IMDBError::MetacriticScore { name: self.name.clone() })??;

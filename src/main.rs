@@ -23,7 +23,7 @@ pub fn main() {
     let _ = index.write(b"[\n");
     let max = tmdb.get_latest().unwrap();
 
-    for id in 1..(max + 1) {
+    for id in 1..max + 1 {
         match Movie::save(id, &mut tmdb) {
         | Err(err) => error!("{}: {}", id, err),
         | Ok(movie) => {
