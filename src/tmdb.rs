@@ -28,12 +28,13 @@ pub struct RawMovie {
     pub title: String,
     pub adult: bool,
     pub genres: Vec<Genre>,
+    pub original_language: String,
     pub overview: Option<String>,
-    pub popularity: f32,
     pub release_date: String,
     pub revenue: f32,
     pub runtime: i32, 
     pub vote_average: f32,
+    pub vote_count: i32,
 }
 
 #[derive(Deserialize)]

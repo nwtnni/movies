@@ -1,5 +1,6 @@
 use reqwest;
 use failure::Error;
+use std::str::FromStr;
 
 use regex::Regex;
 use regex::Captures;
@@ -16,6 +17,10 @@ macro_rules! abs_url {
     ( $path:expr ) => ( format!("http://www.imdb.com{}", $path) )
 }
 
+macro_rules! metacritic_url {
+    ( $id:expr ) => ( format!("http://www.imdb.com/title/{}/criticreviews?ref_=tt_ov_rt", $id) )
+}
+
 #[derive(Debug, Fail)]
 pub enum IMDBError {
     #[fail(display = "{} is unavailable on IMDB", id)]
@@ -24,8 +29,17 @@ pub enum IMDBError {
     #[fail(display = "{} is missing link to poster", name)]
     Image { name: String },
 
+    #[fail(display = "{} is missing rating", name)]
+    Rating { name: String },
+
     #[fail(display = "{} is missing poster", name)]
     Poster { name: String },
+
+    #[fail(display = "{} is missing IMDB score", name)]
+    IMDBScore { name: String },
+
+    #[fail(display = "{} is missing Metacritic score", name)]
+    MetacriticScore { name: String },
 
     #[fail(display = "{} is missing summary", name)]
     Summary { name: String },
@@ -40,12 +54,20 @@ lazy_static! {
     static ref SUMMARY: Selector = Selector::parse("#titleStoryLine [itemprop=description] p").unwrap();
     static ref SYNOPSIS: Selector = Selector::parse("#titleStoryLine .see-more a[href]").unwrap();
     static ref TEXT: Selector = Selector::parse("#plot-synopsis-content .ipl-zebra-list__item").unwrap();
+    static ref RATING: Selector = Selector::parse("meta[itemprop=contentRating][content]").unwrap();
+
+    static ref IMDB_SCORE_VALUE: Selector = Selector::parse("span[itemprop=ratingValue]").unwrap();
+    static ref IMDB_SCORE_COUNT: Selector = Selector::parse("span[itemprop=ratingCount]").unwrap();
+
+    static ref METACRITIC_SCORE_VALUE: Selector = Selector::parse("span[itemprop=ratingValue]").unwrap();
+    static ref METACRITIC_SCORE_COUNT: Selector = Selector::parse("span[itemprop=ratingCount]").unwrap();
 
     static ref HYPERLINK: Regex = Regex::new(r"(\(\s*)?<a[^>]*>([^<]*)</a>(?:\s*\)\s*)?").unwrap();
     static ref WRITTEN_BY: Regex = Regex::new(r"(?s:\s*<em.*>\s*)").unwrap();
 }
 
 pub struct IMDB {
+    id: String,
     name: String,
     home: Html,
 }
@@ -57,7 +79,8 @@ impl IMDB {
                 .map_err(|_| IMDBError::Home { id: id.to_owned() })?
                 .text()?
         );
-        Ok(IMDB { name: name.to_owned(), home })
+
+        Ok(IMDB { id: id.to_owned(), name: name.to_owned(), home })
     }
 
     /// Returns the URL of the poster of movie with IMDB ID [id]
@@ -79,6 +102,49 @@ impl IMDB {
                 .ok_or(IMDBError::Image { name: self.name.clone() })?
                 .to_owned()
         )
+    }
+
+    pub fn get_rating(&self) -> Result<String, Error> {
+        Ok(
+            self.home.select(&*RATING) 
+                .map(|element| element.value().attr("content").unwrap())
+                .next()
+                .ok_or(IMDBError::Rating { name: self.name.clone() })?
+                .to_owned()
+        )
+    }
+
+    pub fn get_imdb_score(&self) -> Result<(f32, i32), Error> {
+        let value = self.home.select(&*IMDB_SCORE_VALUE) 
+            .map(|element| f32::from_str(&element.inner_html()))
+            .next()
+            .ok_or(IMDBError::IMDBScore { name: self.name.clone() })??;
+        
+        let count = self.home.select(&*IMDB_SCORE_COUNT) 
+            .map(|element| i32::from_str(&element.inner_html().replace(",", "")))
+            .next()
+            .ok_or(IMDBError::IMDBScore { name: self.name.clone() })??;
+
+        Ok((value, count))
+    }
+
+    pub fn get_metacritic_score(&self) -> Result<(f32, i32), Error> {
+
+        let metacritic = Html::parse_document(
+            &reqwest::get(&metacritic_url!(self.id))?.text()?
+        );
+
+        let value = metacritic.select(&*METACRITIC_SCORE_VALUE)
+            .map(|element| f32::from_str(&element.inner_html()))
+            .next()
+            .ok_or(IMDBError::MetacriticScore { name: self.name.clone() })??;
+
+        let count = self.home.select(&*METACRITIC_SCORE_COUNT)
+            .map(|element| i32::from_str(&element.inner_html().replace(",", "")))
+            .next()
+            .ok_or(IMDBError::MetacriticScore { name: self.name.clone() })??;
+
+        Ok((value, count))
     }
 
     pub fn get_summary(&self) -> Result<String, Error> {

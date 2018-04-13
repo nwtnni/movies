@@ -40,13 +40,19 @@ pub struct Movie {
     pub title: String,
     pub genres: Vec<String>,
     pub keywords: Vec<String>,
-    pub popularity: f32,
+    pub original_language: String,
+    pub rating: String,
     pub release_date: String,
     pub revenue: f32,
     pub runtime: i32, 
     pub summary: String,
     pub tokens: Vec<String>,
-    pub vote_average: f32,
+    pub tmdb_score_value: f32,
+    pub tmdb_score_count: i32,
+    pub imdb_score_value: f32,
+    pub imdb_score_count: i32,
+    pub meta_score_value: f32,
+    pub meta_score_count: i32,
 }
 
 #[derive(Serialize)]
@@ -63,6 +69,23 @@ impl Movie {
         let keywords = tmdb.get_keywords(id)?;
 
         let imdb = IMDB::new(&movie.imdb_id, &movie.title)?;
+
+        let rating = imdb
+            .get_rating()
+            .unwrap_or_else(|_| {
+                warn!("{} has no MPAA rating", movie.title.clone());
+                "NOT RATED".to_owned()
+            });
+
+        let (imdb_score_value, imdb_score_count) = imdb.get_imdb_score()?;
+
+        let (meta_score_value, meta_score_count) = imdb
+            .get_metacritic_score()
+            .unwrap_or_else(|_| {
+                warn!("{} has no Metacritic ratings", movie.title.clone());
+                (0., 0)
+            });
+
         let summary = imdb
             .get_summary()
             .or_else(|error| {
@@ -72,7 +95,7 @@ impl Movie {
                     if text.is_empty() {
                         Err(IMDBError::Summary { name: movie.title.clone() })
                     } else {
-                        warn!("[TOKENS] {}; Using overview of length: {}", error, text.len());
+                        warn!("{}; substituting overview of length {}", error, text.len());
                         Ok(text.to_owned())
                     }
                 }
@@ -82,11 +105,10 @@ impl Movie {
         let synopsis = imdb
             .get_synopsis()
             .and_then(|text| {
-                info!("[TOKENS] Using synopsis of length: {}", text.len());
+                info!("[TOKENS] {}: synopsis of length {}", id, text.len());
                 Ok(text)
-            })
-            .unwrap_or_else(|error| {
-                warn!("[TOKENS] {}; Using summary of length: {}", error, summary.len());
+            }).unwrap_or_else(|_| {
+                warn!("[TOKENS] {}: summary of length {}", id, summary.len());
                 summary.clone()
             });
 
@@ -106,18 +128,24 @@ impl Movie {
             serde_json::to_string(
                 &Movie {
                     id: movie.imdb_id.clone(),
-                    cast: cast,
-                    crew: crew,
+                    cast,
+                    crew,
                     title: movie.title.clone(),
                     genres: movie.genres.into_iter().map(|genre| genre.name).collect(),
-                    keywords: keywords,
-                    popularity: movie.popularity,
+                    keywords,
+                    original_language: movie.original_language,
+                    rating,
                     release_date: movie.release_date,
                     revenue: movie.revenue,
                     runtime: movie.runtime, 
-                    summary: summary,
-                    tokens: tokens,
-                    vote_average: movie.vote_average,
+                    summary,
+                    tokens,
+                    tmdb_score_value: movie.vote_average,
+                    tmdb_score_count: movie.vote_count,
+                    imdb_score_value,
+                    imdb_score_count,
+                    meta_score_value,
+                    meta_score_count,
                 }
             )?.as_bytes()
         )?;
