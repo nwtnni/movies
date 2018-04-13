@@ -2,6 +2,7 @@ use reqwest;
 use failure::Error;
 
 use regex::Regex;
+use regex::Captures;
 use scraper::Html;
 use scraper::Selector;
 
@@ -40,7 +41,7 @@ lazy_static! {
     static ref SYNOPSIS: Selector = Selector::parse("#titleStoryLine .see-more a[href]").unwrap();
     static ref TEXT: Selector = Selector::parse("#plot-synopsis-content .ipl-zebra-list__item").unwrap();
 
-    static ref HYPERLINK: Regex = Regex::new(r"\s*\(\s*<a[^>]*>[^<]*</a>\s*\)").unwrap();
+    static ref HYPERLINK: Regex = Regex::new(r"(\(\s*)?<a[^>]*>([^<]*)</a>(?:\s*\)\s*)?").unwrap();
     static ref WRITTEN_BY: Regex = Regex::new(r"(?s:\s*<em.*>\s*)").unwrap();
 }
 
@@ -84,7 +85,9 @@ impl IMDB {
         Ok(
             self.home.select(&*SUMMARY)
                 .map(|element| {
-                    let s = HYPERLINK.replace_all(element.inner_html().trim(), "").to_string();
+                    let s = HYPERLINK.replace_all(element.inner_html().trim(), |caps: &Captures| {
+                        if let None = caps.get(1) { caps[2].to_owned() } else { "".to_owned() }
+                    }).to_string();
                     WRITTEN_BY.replace_all(&s, "").to_string()
                 })
                 .filter(|summary| !summary.is_empty())
