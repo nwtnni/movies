@@ -24,44 +24,70 @@
 
 ```json
 {
-  "id"    : "IMDB_ID",
-  "cast" : [
-    {
-      "character" : "CHARACTER_NAME",
-      "name"      : "ACTOR_NAME"
-    }
-  ],
-  "crew" : [
-    {
-      "job"  : "JOB_NAME",
-      "name" : "CREW_NAME"
-    } 
-  ]
-  "title" : "MOVIE_TITLE",
-  "genres" : [
-    "GENRE_0",
-    "GENRE_1"
-  ],
-  "keywords" : [
-    "KEYWORD_0",
-    "KEYWORD_1",
-  ],
+  "id"                : "IMDB_ID",
+
+  "cast"              : [
+                          {
+                            "character" : "CHARACTER_NAME_1",
+                            "name"      : "ACTOR_NAME_1"
+                          },
+                          {
+                            "character" : "CHARACTER_NAME_1",
+                            "name"      : "ACTOR_NAME_1"
+                          }
+                        ],
+
+  "crew"              : [
+                          {
+                            "job"  : "JOB_NAME_0",
+                            "name" : "CREW_NAME_0"
+                          },
+                          {
+                            "job"  : "JOB_NAME_1",
+                            "name" : "CREW_NAME_1"
+                          }
+                        ],
+
+  "title"             : "MOVIE_TITLE",
+
+  "genres"            : [
+                          "GENRE_0",
+                          "GENRE_1"
+                        ],
+
+  "keywords"          : [
+                          "KEYWORD_0",
+                          "KEYWORD_1",
+                        ],
+
   "original_language" : "LANGUAGE",
-  "rating" : "MPAA_RATING",
-  "release_date" : "RELEASE_DATE",
-  "revenue" : REVENUE_FLOAT,
-  "runtime" : RUNTIME_INT,
-  "summary" : "SUMMARY_TEXT",
-  "tokens" : [
-    "SYNOPSIS_TOKEN_0",
-    "SYNOPSIS_TOKEN_1"
-  ],
-  "tmdb_score_value" : TMDB_SCORE_VALUE_FLOAT,
-  "tmdb_score_count" : TMDB_SCORE_COUNT_INT,
-  "imdb_score_value" : IMDB_SCORE_VALUE_FLOAT,
-  "imdb_score_count" : IMDB_SCORE_COUNT_INT,
-  "meta_score_value" : META_SCORE_VALUE_FLOAT,
-  "meta_score_count" : META_SCORE_COUNT_INT,
+
+  "rating"            : "MPAA_RATING",
+
+  "release_date"      : "RELEASE_DATE",
+
+  "revenue"           : 0.0,
+
+  "runtime"           : 0,
+
+  "summary"           : "SUMMARY_TEXT",
+
+  "tokens"            : [
+                          "SYNOPSIS_TOKEN_0",
+                          "SYNOPSIS_TOKEN_1"
+                        ],
+
+  "tmdb_score_value" : 0.0,
+
+  "tmdb_score_count" : 0,
+
+  "imdb_score_value" : 0.0,
+
+  "imdb_score_count" : 0,
+
+  "meta_score_value" : 0.0,
+
+  "meta_score_count" : 0,
 }
 ```
 
