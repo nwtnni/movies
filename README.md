@@ -10,13 +10,14 @@
     "id"    : "IMDB_ID_0",
     "title" : "MOVIE_TITLE_0",
   },
-
-  ...
-
+  {
+    "id"    : "IMDB_ID_1",
+    "title" : "MOVIE_TITLE_1",
+  },
   {
     "id"    : "IMDB_ID_N",
     "title" : "MOVIE_TITLE_N",
-  },
+  }
 ]
 ```
 
