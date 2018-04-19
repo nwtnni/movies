@@ -1,5 +1,11 @@
 # Movies
 
+## Download Link
+
+[Complete dataset extracted from IMDB and TMDB][1]
+
+[1]: https://s3.us-east-2.amazonaws.com/cinema-pop-complete/data.tar
+
 ## Data Format
 
 ### movies.json
@@ -101,8 +107,18 @@ IMDB_ID_1.jpg
 IMDB_ID_N.jpg
 ```
 
-## Download Link
+## Visualizations
 
-[Complete dataset extracted from IMDB and TMDB][1]
+NOTE: this is the subset of movies with non-zero Metacritic rating counts, used as a rough metric of movie quality.
 
-[1]: https://s3.us-east-2.amazonaws.com/cinema-pop-complete/data.tar
+## Genres
+
+![Genre distribution](/resources/genres.png)
+
+## Original Languages
+
+![Language distribution](/resources/languages.png)
+
+## MPAA Ratings
+
+![Rating distribution](/resources/ratings.png)
