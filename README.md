@@ -122,3 +122,17 @@ NOTE: this is the subset of movies with non-zero Metacritic rating counts, used 
 ## MPAA Ratings
 
 ![Rating distribution](/resources/ratings.png)
+
+## Runtime
+
+![Runtime distribution](/resources/runtime.png)
+
+## Scores
+
+![Score distribution](/resources/scores.png)
+
+## Token Counts
+
+![Token distribution](/resources/tokens.png)
+![Medium token distribution](/resources/med_tokens.png)
+![Small token distribution](/resources/small_tokens.png)
