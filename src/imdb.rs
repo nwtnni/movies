@@ -61,6 +61,7 @@ lazy_static! {
 
     static ref HYPERLINK: Regex = Regex::new(r"(\(\s*)?<a[^>]*>([^<]*)</a>(?:\s*\)\s*)?").unwrap();
     static ref WRITTEN_BY: Regex = Regex::new(r"(?s:\s*<em.*>\s*)").unwrap();
+    static ref RESIZE: Regex = Regex::new(r"@\._V1_.*\.jpg").unwrap();
 }
 
 pub struct IMDB {
@@ -94,8 +95,9 @@ impl IMDB {
         Ok(
             Html::parse_document(&poster)
                 .select(&*IMAGE)
-                .map(|element| element.value().attr("content").unwrap())
                 .next()
+                .map(|element| element.value().attr("content").unwrap())
+                .map(|link| RESIZE.replace_all(link, r"@._V1_.jpg").to_string())
                 .ok_or(IMDBError::Image { name: self.name.clone() })?
                 .to_owned()
         )
