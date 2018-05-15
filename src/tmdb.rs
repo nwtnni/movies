@@ -63,7 +63,7 @@ pub enum TMDBError {
 }
 
 lazy_static! {
-    static ref DELAY: time::Duration = time::Duration::from_millis(250);
+    static ref DELAY: time::Duration = time::Duration::from_millis(300);
 }
 
 /// Represents a TMDB connection with API key and rate limiting.

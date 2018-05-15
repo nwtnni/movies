@@ -55,7 +55,7 @@ pub struct Movie {
     pub meta_score_count: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Index {
     pub id: String,
     pub title: String,
