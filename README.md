@@ -1,10 +1,12 @@
 # Movies
 
-## Download Link
+A utility for scraping movie posters and data from [IMDB][1] and [TMDB][2]. Used to
+collect data for [CinemaPop][3], our [final project][4] for CS 4300: Language and Information.
 
-[Complete dataset extracted from IMDB and TMDB][1]
+Requires a [TMDB API key][5] loaded in the environment variable `TMDB_API_KEY`.
 
-[1]: https://s3.us-east-2.amazonaws.com/cinema-pop-complete/data.tar
+NOTE: relies on HTML scraping via CSS selectors, and is fairly brittle. Modifications
+may need to be made to the `imdb` module if IMDB updates their HTML layout.
 
 ## Data Format
 
@@ -136,3 +138,9 @@ NOTE: this is the subset of movies with non-zero Metacritic rating counts, used 
 ![Token distribution](/resources/tokens.png)
 ![Medium token distribution](/resources/med_tokens.png)
 ![Small token distribution](/resources/small_tokens.png)
+
+[1]: https://www.imdb.com/
+[2]: https://www.themoviedb.org/
+[3]: http://cinemapop.infosci.cornell.edu/
+[4]: https://github.com/nwtnni/cinema-pop
+[5]: https://www.themoviedb.org/faq/api
